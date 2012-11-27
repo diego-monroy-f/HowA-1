@@ -32,8 +32,9 @@ from kivy.uix.togglebutton import ToggleButton
 #Personal libraries imports
 import CalendarUtils
 from Activities import *
+from HelpScreen import *
+from ActivityLayouts import *
 
-helpRstText = '[size=20][color=000000][color=111111][b][size=24]Oh hai! It appears that you have reached the Help section, so here are some FAQ.[/size][/b][/color]\n\n[i]What is HowA?[/i]\n\nHowA is an activity administration program. Add activities ([b]homeworks[/b], [b]projects[/b] or [b]fixed activities[/b])\nto its calendar so you can easily see them in a list.\n\n[i]What is an [b]Activity[/b]?[/i]\n\nIt is a task related with your school or educational life that you must do,\nlike a project, a school assignment or extracurricular activities.\n\n[i]What is a [b]Fixed Activity[/b]?[/i]\n\nAn activity that you do frequently and regularly, like playing basketball or taking piano lessons.\nYou must specify the frequency of this activity (which days and how many hours).\n\n[i]What is a [b]Project[/b]?[/i]\n\nA schooltask that you must complete before a certain\ndue date, you must also actType in the approximate hours you will dedicate to completing this task.\n\n[i]What is a [b]Homework[/b]?[/i]\n\nIt is a task that you must hand in before a certain due date, you must also actType in the approximate\nhours you will dedicate to completing this task.\n\n[/size][/color]'
 maxActivities = 20
 daysList, actList, assList = [[] for i in range(7)], {}, []
 actPointer, assPointer = 0, 0
@@ -63,132 +64,20 @@ def changeActivity(activity):
 	HowAInstance.activitiesLayout.changeParameters(activity)
 
 def removeActivity(activity):
-	global actList, daysList
-	actId = activity.getId()
-	daysList = [filter(lambda a: a!=actId, elem) for elem in daysList]
-	actList.pop(actId)
-	HowAInstance.mainContent.drawCalendar()
+	global daysList, actList, assList
+	if activity.actType == 1:
+		actId = activity.getId()
+		daysList = [filter(lambda a: a!=actId, elem) for elem in daysList]
+		actList.pop(actId)
+		HowAInstance.mainContent.drawCalendar()
+	else:
+		actId = activity.getId()
+		assList = filter(lambda a: a.getId() != actId, assList)
+		HowAInstance.mainContent.proHomeContent.updateCalendar()
 
 ##################################################
 ##########             GUI 				##########
 ##################################################
-
-#Selected Fixed activity
-class FActivityOption(GridLayout):
-
-	def __init__(self, parameters='', **kwargs):
-		#Design
-		self.cols = 1
-		self.size_hint_y = None
-		self.pos_hint={'center_x':0.5, 'center_y':0.5}
-		self.spacing = 10
-		self.height = 170
-
-		#Return parameters 
-		self.activityName = ''
-
-		#Change case variables
-		self.parameters = parameters
-
-		super(FActivityOption, self).__init__(**kwargs)
-
-		#Add the activity name text box
-		self.activityNameInstance = ActivityNameLayout(width=150)
-		self.add_widget(self.activityNameInstance)
-
-		#Make the day buttons
-		self.daysBoxLayout = BoxLayout(size_hint_y=None, height=50,  orientation='horizontal')
-		self.daysBoxLayout.add_widget(Label(text='Fixed activity days', size_hint_x=None, width=150))
-		self.daysBoxList = []
-		for day in weekDaysNumbers:
-			self.daysBoxList.append(ToggleButton(text=day, size_hint_x=None, width=90))
-			self.daysBoxLayout.add_widget(self.daysBoxList[-1])
-		self.add_widget(self.daysBoxLayout)
-
-		#Generate the layout for the start and end textboxes
-		self.timeBoxLayout = GridLayout(cols=2, size_hint_y=None, height=80)
-
-		#Add the textboxes for the start time
-		self.timeBoxLayout.add_widget(Label(text='Activity hour start:', size_hint_x=None, width=150))
-		self.textInputStart = TextInput(multiline=False, size_hint_x=None, width=200, font_size=16)
-		self.timeBoxLayout.add_widget(self.textInputStart)
-
-		#Add the textboxes for the end time
-		self.timeBoxLayout.add_widget(Label(text='Activity hour end:', size_hint_x=None, width=150))
-		self.textInputEnd = TextInput(multiline=False, size_hint_x=None, width=200, font_size=16)
-		self.timeBoxLayout.add_widget(self.textInputEnd)
-
-		#Add the time widget
-		self.add_widget(self.timeBoxLayout)
-
-		#Add the activation button to invoke validation
-		self.activateButton = AddActivityButton()
-		self.add_widget(self.activateButton)
-	
-
-#Selected Proyect/Homework activity
-class PActivityOption(GridLayout):
-
-	def __init__(self, parameters='', **kwargs):
-
-		#Design
-		self.cols = 1
-		self.spacing = 10
-
-		#Return variables
-		self.activityName = ''
-		self.duration = '-1'
-
-		#Change activity values
-		self.parameters = parameters
-
-		super(PActivityOption, self).__init__(**kwargs)
-
-		#Add the activity name text box
-		self.activityNameInstance = ActivityNameLayout()
-		self.add_widget(self.activityNameInstance)
-
-		#Add question label
-		self.timeAproxLayout = GridLayout(cols=2, size_hint_y=None, height=40)
-		self.timeAproxLayout.add_widget(Label(text='Approximate hours:', size_hint_x=None, width=150))
-		self.textInputAprox = TextInput(multiline=False, size_hint_x=None, width=200, font_size=16)
-		self.timeAproxLayout.add_widget(self.textInputAprox)
-		self.add_widget(self.timeAproxLayout)
-
-		#Add the data collection button
-		self.activateButton = AddActivityButton()
-		self.add_widget(self.activateButton)
-		
-
-#Collect all data from parameters and validate it
-class AddActivityButton(Button):
-	
-	def __init__(self, **kwargs):
-		self.text = 'Add the next activity'
-		self.size_hint = (None, None)
-		self.width = 150
-		self.height = 100
-		self.pos_hint = {'center_x':0.5, 'center_y':1}
-
-		super(AddActivityButton, self).__init__(**kwargs)
-	
-
-#A class for collecting the activity name
-#Missing bind command
-class ActivityNameLayout(BoxLayout):
-	
-	def __init__(self, **kwargs):
-		self.orientation = 'horizontal'
-		self.height = 40
-		self.size_hint_y = None
-		self.activityName = ''
-
-		super(ActivityNameLayout, self).__init__(**kwargs)
-
-		self.add_widget(Label(text='Activity name: ', size_hint_x=None, width=150))
-		self.actNameTextInput=TextInput(multiline=False, font_size=16)
-		self.add_widget(self.actNameTextInput)
-	
 
 #Main activityScreen
 class ActivityScreen(GridLayout):
@@ -224,10 +113,10 @@ class ActivityScreen(GridLayout):
 		self.currentActivity = activity
 		if activity.actType == 1:
 			index = 0
-			print(activity.days)
+			#print(activity.days)
 			for elem in self.activitiesLayoutOptions.daysBoxList:
 				if activity.days[weekDaysNumbers[index]]:
-					print(weekDaysNumbers[index])
+					#print(weekDaysNumbers[index])
 					elem.state = 'down'
 				index += 1
 
@@ -336,6 +225,7 @@ class ActivityScreen(GridLayout):
 
 	def closeWindow(self, *l):
 		HowAInstance.mainContent.drawCalendar()
+		HowAInstance.mainContent.proHomeContent.updateCalendar()
 		self.exiting = True
 		self.clearWindow()
 		mainScreen.current = 'Main Screen'
@@ -354,16 +244,6 @@ class ActivityScreen(GridLayout):
 		for button in self.actLayTypeButtons:
 			button.state = 'normal'
 		self.currentActivity = Activity()
-
-
-#Help Screen Class
-class HelpScreen(BoxLayout):
-	
-	def __init__(self, **kwargs):
-		
-		super(BoxLayout, self).__init__(**kwargs)
-
-		self.add_widget(Label(text=helpRstText, markup=True))
 
 
 #Draw calendar objects definitions
@@ -427,23 +307,34 @@ class Calendar(GridLayout):
 	def setDayMode(self):
 		weekDay = CalendarUtils.getCurrentWeekDay()
 		self.calendarScreen = BoxLayout(orientation='vertical')
-		print(daysList[weekDay])
+		#print(daysList[weekDay])
 		for index in sorted(daysList[weekDay], key=(lambda x: convertTime(actList[x].start))):
 			activity = actList[index]
-			print(activity.name)
+			#print(activity.name)
 			tempLayout = BoxLayout(orientation='horizontal', size_hint_y=None, height=50)
 			tempLayout.add_widget(Button(size_hint_x=None, width=150, text=activity.start + ' - ' + activity.end))
 			tempLayout.add_widget(CalendarButton(activity=activity, text=activity.name))
 			self.calendarScreen.add_widget(tempLayout)
 		self.add_widget(self.calendarScreen)
 
-class ProHomeContent(BoxLayout):
+class ProHomeContent(GridLayout):
 
-	def __init__(self, **kwargs):
-		self.orientation = 'vertical'
+	def __init__(self, minSize, **kwargs):
+		self.cols=1
 
 		super(ProHomeContent, self).__init__(**kwargs)
-		#TODO
+		self.bind(minimum_height=minSize)
+		self.updateCalendar()
+		
+	def updateCalendar(self):
+		self.clear_widgets()
+		self.calendarScreen = BoxLayout(orientation='vertical')
+		for activity in sorted(assList, key=(lambda x: x.duration)):
+			#print(activity.name)
+			tempLayout = BoxLayout(orientation='horizontal', size_hint_y=None, height=50)
+			tempLayout.add_widget(CalendarButton(activity=activity, text=activity.duration + " : " + activity.name))
+			self.calendarScreen.add_widget(tempLayout)
+		self.add_widget(self.calendarScreen)
 			
 
 class MainScreen(GridLayout):
@@ -525,9 +416,10 @@ class MainScreen(GridLayout):
 		self.rightScreen = GridLayout(cols=1)
 
 		#Change right up screen values Homeworks
-		self.rightScreen.add_widget(Button(text='Homeworks/Projects', font_size=16, size_hint_y=None, height=(self.height//10)))
+		self.rightScreen.add_widget(Button(text='Homeworks/Projects', font_size=16, size_hint_y=None, height=60))
 		self.proHome = ScrollView()
-		self.proHome.add_widget(ProHomeContent())
+		self.proHomeContent = ProHomeContent(ProHomeContent(self.height-60))
+		self.proHome.add_widget(self.proHomeContent)
 		self.rightScreen.add_widget(self.proHome)
 		self.add_widget(self.rightScreen)
 
