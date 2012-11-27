@@ -2,8 +2,8 @@
 #Autor: Saul de Nova Caballero
 
 #Python libraries
-
 import pickle
+from pprint import pprint
 
 #Start by importing kivy
 import kivy
@@ -35,15 +35,16 @@ from Activities import *
 
 helpRstText = '[size=20][color=000000][color=111111][b][size=24]Oh hai! It appears that you have reached the Help section, so here are some FAQ.[/size][/b][/color]\n\n[i]What is HowA?[/i]\n\nHowA is an activity administration program. Add activities ([b]homeworks[/b], [b]projects[/b] or [b]fixed activities[/b])\nto its calendar so you can easily see them in a list.\n\n[i]What is an [b]Activity[/b]?[/i]\n\nIt is a task related with your school or educational life that you must do,\nlike a project, a school assignment or extracurricular activities.\n\n[i]What is a [b]Fixed Activity[/b]?[/i]\n\nAn activity that you do frequently and regularly, like playing basketball or taking piano lessons.\nYou must specify the frequency of this activity (which days and how many hours).\n\n[i]What is a [b]Project[/b]?[/i]\n\nA schooltask that you must complete before a certain\ndue date, you must also actType in the approximate hours you will dedicate to completing this task.\n\n[i]What is a [b]Homework[/b]?[/i]\n\nIt is a task that you must hand in before a certain due date, you must also actType in the approximate\nhours you will dedicate to completing this task.\n\n[/size][/color]'
 maxActivities = 20
-daysList, actList, assList = [[] for i in range(7)], [], []
+daysList, actList, assList = [[] for i in range(7)], {}, []
 actPointer, assPointer = 0, 0
 
 #Change activities list and redraw calendar
 def addActivity(activity):
 	global assPointer, actPointer, daysList, actList, assList
+	#print('LOL')
 	if activity.actType == 1:
 		activity.setId(actPointer)
-		actList.append(activity)
+		actList[actPointer] = activity
 		for i in range(len(weekDaysNumbers)):
 			if activity.days[weekDaysNumbers[i]]:
 				daysList[i].append(actPointer)
@@ -52,12 +53,21 @@ def addActivity(activity):
 	else:
 		assList.append(activity)
 		assPointer += 1
+	
+	#print(actList, assList)
+	#pprint(daysList)
 
 def changeActivity(activity):
-	pass
+	removeActivity(activity)
+	mainScreen.current = 'Activities Screen'
+	HowAInstance.activitiesLayout.changeParameters(activity)
 
 def removeActivity(activity):
-	pass
+	global actList, daysList
+	actId = activity.getId()
+	daysList = [filter(lambda a: a!=actId, elem) for elem in daysList]
+	actList.pop(actId)
+	HowAInstance.mainContent.drawCalendar()
 
 ##################################################
 ##########             GUI 				##########
@@ -90,7 +100,7 @@ class FActivityOption(GridLayout):
 		self.daysBoxLayout = BoxLayout(size_hint_y=None, height=50,  orientation='horizontal')
 		self.daysBoxLayout.add_widget(Label(text='Fixed activity days', size_hint_x=None, width=150))
 		self.daysBoxList = []
-		for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
+		for day in weekDaysNumbers:
 			self.daysBoxList.append(ToggleButton(text=day, size_hint_x=None, width=90))
 			self.daysBoxLayout.add_widget(self.daysBoxList[-1])
 		self.add_widget(self.daysBoxLayout)
@@ -189,6 +199,7 @@ class ActivityScreen(GridLayout):
 		self.spacing = 10
 
 		self.parameters = parameters
+		self.exiting = False
 		self.currentActivity = Activity()
 		self.currentOption = ''
 
@@ -197,8 +208,8 @@ class ActivityScreen(GridLayout):
 		self.actLayType = BoxLayout(orientation='horizontal', height=40, size_hint_y=None)
 		self.actLayType.add_widget(Label(text='Activity Type: ', size_hint_x=None, width=150))
 		self.actLayTypeButtons = []
-		for posibleType in ['Fixed Activity','Project','Homework']:
-			self.actLayTypeButtons.append(ToggleButton(text=posibleType, group='actTypes', size_hint_x=None))
+		for posibleType in ['Fixed Activity','Project/Homework']:
+			self.actLayTypeButtons.append(ToggleButton(text=posibleType, group='actTypes', size_hint_x=None, width=200))
 			self.actLayTypeButtons[-1].bind(state=self.changeActivitiesLayout)
 			self.actLayType.add_widget(self.actLayTypeButtons[-1])
 		self.add_widget(self.actLayType)
@@ -206,6 +217,27 @@ class ActivityScreen(GridLayout):
 		#Add personalized options on layout
 		self.activitiesLayoutOptions = self.ActivitiesLayoutOptionsFun()
 		self.add_widget(self.activitiesLayoutOptions)
+	
+	def changeParameters(self, activity):
+		self.actLayTypeButtons[activity.actType-1].state = 'down'
+		self.activitiesLayoutOptions.activityNameInstance.actNameTextInput.text = activity.name
+		self.currentActivity = activity
+		if activity.actType == 1:
+			index = 0
+			print(activity.days)
+			for elem in self.activitiesLayoutOptions.daysBoxList:
+				if activity.days[weekDaysNumbers[index]]:
+					print(weekDaysNumbers[index])
+					elem.state = 'down'
+				index += 1
+
+			self.activitiesLayoutOptions.textInputStart.text = activity.start
+			self.currentActivity.start = activity.start
+			self.activitiesLayoutOptions.textInputEnd.text = activity.end
+			self.currentActivity.end = activity.end
+		else:
+			self.activitiesLayoutOptions.textInputAprox.text = activity.duration
+			self.currentActivity.duration = activity.duration
 
 	def ActivitiesLayoutOptionsFun(self, option=''):
 		if option == 'Fixed Activity':
@@ -219,7 +251,7 @@ class ActivityScreen(GridLayout):
 			layout.textInputEnd.bind(on_text_validate=self.changeEndTime)
 			layout.activateButton.bind(on_press=self.collectData)
 
-		elif option == 'Project' or option == 'Homework':
+		elif option == 'Project/Homework':
 			layout = PActivityOption(parameters=self.parameters)
 
 			#Make bindings
@@ -253,10 +285,11 @@ class ActivityScreen(GridLayout):
 	
 	def changeDays(self, instance, value):
 		#print('lol2')
-		if value == 'down':
-			self.currentActivity.days[instance.text] = True
-		else:
-			self.currentActivity.days[instance.text] = False
+		if not self.exiting:
+			if value == 'down':
+				self.currentActivity.days[instance.text] = True
+			else:
+				self.currentActivity.days[instance.text] = False
 	
 	def changeStartTime(self, instance):
 		#print('lol3')
@@ -303,6 +336,7 @@ class ActivityScreen(GridLayout):
 
 	def closeWindow(self, *l):
 		HowAInstance.mainContent.drawCalendar()
+		self.exiting = True
 		self.clearWindow()
 		mainScreen.current = 'Main Screen'
 
@@ -392,6 +426,7 @@ class Calendar(GridLayout):
 	def setDayMode(self):
 		weekDay = CalendarUtils.getCurrentWeekDay()
 		self.calendarScreen = BoxLayout(orientation='vertical')
+		print(daysList[weekDay])
 		for index in sorted(daysList[weekDay], key=(lambda x: convertTime(actList[x].start))):
 			activity = actList[index]
 			print(activity.name)
@@ -536,13 +571,11 @@ if __name__ in ('__main__', '__android__'):
 	mainScreen.add_widget(helpScreenInstance)
 
 	try:
-		daysList, actList, assList = pickle.load(open('howa.conf', 'rb'))
-		actPointer = len(actList)
+		daysList, actList, assList, actPointer = pickle.load(open('howa.conf', 'rb'))
 		assPointer = len(assList)
 	except Exception as e:
-		print(e)
-		daysList, actList, assList = [[] for i in range(7)], [], []
+		daysList, actList, assList, actPointer = [[] for i in range(7)], {}, [], 0
 	HowAInstance = HowA()
 	HowAInstance.run()
-	pickle.dump([daysList, actList, assList], open('howa.conf', 'wb'))
+	pickle.dump([daysList, actList, assList, actPointer], open('howa.conf', 'wb'))
 
