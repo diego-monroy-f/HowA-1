@@ -421,6 +421,7 @@ class Calendar(GridLayout):
 			self.setDayMode()
 	
 	def setWeekMode(self):
+		#TODO
 		pass
 	
 	def setDayMode(self):
@@ -435,6 +436,14 @@ class Calendar(GridLayout):
 			tempLayout.add_widget(CalendarButton(activity=activity, text=activity.name))
 			self.calendarScreen.add_widget(tempLayout)
 		self.add_widget(self.calendarScreen)
+
+class ProHomeContent(BoxLayout):
+
+	def __init__(self, **kwargs):
+		self.orientation = 'vertical'
+
+		super(ProHomeContent, self).__init__(**kwargs)
+		#TODO
 			
 
 class MainScreen(GridLayout):
@@ -513,25 +522,13 @@ class MainScreen(GridLayout):
 		self.add_widget(self.leftScreen)
 
 		#Initialize homeworks and projects lists
-		self.rightScreen = GridLayout(rows=2)
+		self.rightScreen = GridLayout(cols=1)
 
 		#Change right up screen values Homeworks
-		self.rightUpScreen = GridLayout(cols=1, size_hint_y=None, height=int((self.height//2)))
-		self.rightUpScreen.add_widget(Button(text='Homeworks', font_size=16, size_hint_y=None, height=(self.height//10)))
-		self.homeworks = ScrollView()
-		self.homeworks.add_widget(Label(text='Lol'))
-		self.rightUpScreen.add_widget(self.homeworks)
-
-		#Change right down screen values
-		self.rightDownScreen = GridLayout(cols=1, size_hint_y=None, height=int((self.height//2)))
-		self.rightUpScreen.add_widget(Button(text='Projects', font_size=16, size_hint_y=None, height=(self.height//10)))
-		self.projects = ScrollView()
-		self.projects.add_widget(Label(text='Lol'))
-		self.rightUpScreen.add_widget(self.projects)
-
-		#Add the widgets to the screen
-		self.rightScreen.add_widget(self.rightUpScreen)
-		self.rightScreen.add_widget(self.rightDownScreen)
+		self.rightScreen.add_widget(Button(text='Homeworks/Projects', font_size=16, size_hint_y=None, height=(self.height//10)))
+		self.proHome = ScrollView()
+		self.proHome.add_widget(ProHomeContent())
+		self.rightScreen.add_widget(self.proHome)
 		self.add_widget(self.rightScreen)
 
 
